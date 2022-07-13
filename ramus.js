@@ -1,490 +1,211 @@
-    var transcript = null;
-    var templates = {};
+var START = "start";
+var TRANS = "transcript";
+var transcript = null;
 
-    window.onload = function() {
-      transcript = document.getElementById("transcript");
+var status_line = null;
+var moves_line = null;
+var score_line = null;
 
-      //transcript.innerHTML = document.getElementById("start").innerHTML;
-      transcript.appendChild(render_content(get_elements("start")));
-      var links = transcript.getElementsByTagName("a");
-      setup_links(links);
-    };
+var moves = 0;
+var score = {};
+var visited = {};
 
-    function get_elements(ids) {
-      ids = ids.split(" ");
-      var elements = [];
-      for (var i = 0; i < ids.length; i++) {
-        var elt = document.getElementById(ids[i]);
-        if (elt) elements.push(elt);
-      }
-      return elements;
-    }
+window.addEventListener("load", function () {
+	"use strict";
+	
+	status_line = document.getElementById("status");
+	moves_line = document.getElementById("moves");
+	score_line = document.getElementById("score");
+	transcript = document.getElementById(TRANS);
+	var start = document.getElementById(START);
+	transcript.innerHTML = "";
+	advanceStory(start);
+});
 
-    function render_content(elements) {
-      var turn = document.createElement("div");
-      turn.className = "turn";
-      for (var i = 0; i < elements.length; i++) {
-        var elt = elements[i];
-        if (!templates[elt.id])
-          templates[elt.id] = Mold.bake(elt.innerHTML);
-        Mold.castAppend(turn, templates[elt.id]);
-      }
-      return turn;
-    }
+function advanceStory(fragment) {
+	var clone = fetchFragment(fragment);
+	if (status_line !== null && clone.title !== "") {
+		status_line.innerText = clone.title;
+		clone.removeAttribute("title");
+	}
+	transcript.appendChild(clone);
+	clone.scrollIntoView({behavior: "smooth"});
+}
 
-    function setup_links(links) {
-      for (var i = 0; i < links.length; i++) {
-        var a = links[i];
-        if (!a.href) a.href = "#";
-        else a.className = "external";
-        if (a.rel) a.onclick = function() {
-          this.parentNode.replaceChild(this.firstChild, this);
-          var turn = render_content(get_elements(this.rel));
-          setup_links(turn.getElementsByTagName("a"));
-          turn.style.opacity = 0;
-          transcript.appendChild(turn);
-          //transcript.lastChild.scrollIntoView();
-          smoothScrollTo(transcript.lastChild);
-          emile(turn, "Opacity: 1;", {
-            duration: 1000
-          });
-          return false;
-        };
-      }
-    }
+function fetchFragment(fragment) {
+	var clone = fragment.cloneNode(true);
+	setVisited(clone);
+	countScore(clone);
+	runScripts(clone);
+	setupLinks(clone.getElementsByTagName("a"));
+	clone.removeAttribute("id"); // No duplicates in document.
+	return clone;
+}
 
-    function clear_links() {
-      var links = transcript.getElementsByTagName("a");
+function setVisited(fragment) {
+	if (fragment.classList === undefined) {
+		// Do nothing.
+	} else if (fragment.classList.add === undefined) {
+		// Do nothing.
+	} else if (visited[fragment.id]) {
+		fragment.classList.add("visited");
+	} else {
+		fragment.classList.add("unvisited");
+	}
+	visited[fragment.id] = true;
+}
 
-      for (var i = 0; i < links.length;) {
-        var a = links[i];
-        if (a.rel)
-          a.parentNode.replaceChild(a.firstChild, a);
-        else
-          i++;
-      }
-    }
+function countScore(fragment) {
+	if (fragment.dataset === undefined) {
+		return;
+	} else if (fragment.dataset.score === undefined) {
+		return;
+	} else {
+		score[fragment.id] = parseInt(fragment.dataset.score);
+		var total = 0;
+		for (var i in score)
+			total += score[i];
+		if (score_line !== null)
+			score_line.innerText = total;
+	}
+}
 
-    function clear_text() {
-      transcript.innerHTML = "";
-    }
+function setupLinks(links) {
+	for (var i = 0; i < links.length; i++) {
+		if (links[i].rel !== "external") {
+			links[i].addEventListener("click", linkCallback);
+			links[i].addEventListener("keydown", linkCallback);
+		}
+	}
+}
 
-    // emile.js (c) 2009 Thomas Fuchs
-    // Licensed under the terms of the MIT license.
+function clearLinks(links) {
+	for (var i = 0; i < links.length; i++) {
+		if (links[i].rel !== "external") {
+			clearOneLink(links[i]);
+			i--;
+		}
+	}
+}
 
-    (function(emile, container) {
-      var parseEl = document.createElement('div'),
-        props = ('backgroundColor borderBottomColor borderBottomWidth borderLeftColor borderLeftWidth ' +
-          'borderRightColor borderRightWidth borderSpacing borderTopColor borderTopWidth bottom color fontSize ' +
-          'fontWeight height left letterSpacing lineHeight marginBottom marginLeft marginRight marginTop maxHeight ' +
-          'maxWidth minHeight minWidth opacity outlineColor outlineOffset outlineWidth paddingBottom paddingLeft ' +
-          'paddingRight paddingTop right textIndent top width wordSpacing zIndex').split(' ');
+function clearOneLink(element) {
+	element.outerHTML = element.innerHTML;
+}
 
-      function interpolate(source, target, pos) {
-        return (source + (target - source) * pos).toFixed(3);
-      }
+function linkCallback(event) {
+	if (event.keyCode !== undefined)
+		if (event.keyCode !== 13 && event.keyCode !== 32)
+			return;
+	event.preventDefault();
+	var target_id = this.hash.slice(1);
+	var target = document.getElementById(target_id);
+	if (target === null) {
+		alert("Broken link!");
+		return;
+	}
+	if (this.rel === "clear") {
+		transcript.innerHTML = "";
+	} else if (this.rel === "continue") {
+		clearLinks(transcript.getElementsByTagName("a"));
+		transcript.appendChild(document.createElement("hr"));
+	} else if (this.rel === "reset") {
+		if (status_line !== null) status_line.innerHTML = "";
+		if (moves_line !== null) moves_line.innerHTML = "0";
+		if (score_line !== null) score_line.innerHTML = "0";
+		
+		transcript.innerHTML = "";
+		moves = 0;
+		score = {};
+		visited = {};
+	} else if (this.rel === "replace") {
+		var clone = fetchFragment(target);
+		while (clone.childNodes.length > 0)
+			this.parentNode.insertBefore(clone.firstChild, this);
+		this.parentNode.removeChild(this);
+		return;
+	} else {
+		clearOneLink(this);
+	}
+	moves++;
+	if (moves_line !== null)
+		moves_line.innerText = moves;
+	advanceStory(target);
+}
 
-      function s(str, p, c) {
-        return str.substr(p, c || 1);
-      }
+// Micro-interpreter for a very simple template language.
 
-      function color(source, target, pos) {
-        var i = 2,
-          j, c, tmp, v = [],
-          r = [];
-        while (j = 3, c = arguments[i - 1], i--)
-          if (s(c, 0) == 'r') {
-            c = c.match(/\d+/g);
-            while (j--) v.push(~~c[j]);
-          } else {
-            if (c.length == 4) c = '#' + s(c, 1) + s(c, 1) + s(c, 2) + s(c, 2) + s(c, 3) + s(c, 3);
-            while (j--) v.push(parseInt(s(c, 1 + j * 2, 2), 16));
-          }
-        while (j--) {
-          tmp = ~~(v[j + 3] + (v[j] - v[j + 3]) * pos);
-          r.push(tmp < 0 ? 0 : tmp > 255 ? 255 : tmp);
-        }
-        return 'rgb(' + r.join(',') + ')';
-      }
+var commands = {};
 
-      function parse(prop) {
-        var p = parseFloat(prop),
-          q = prop.replace(/^[\-\d\.]+/, '');
-        return isNaN(p) ? {
-          v: q,
-          f: color,
-          u: ''
-        } : {
-          v: p,
-          f: interpolate,
-          u: q
-        };
-      }
+function runScripts(fragment) {
+	var lines = fragment.innerHTML.split("\n");
+	fragment.innerHTML = lines.map(substLine).join("\n");
+}
 
-      function normalize(style) {
-        var css, rules = {},
-          i = props.length,
-          v;
-        parseEl.innerHTML = '<div style="' + style + '"></div>';
-        css = parseEl.childNodes[0].style;
-        while (i--)
-          if (v = css[props[i]]) rules[props[i]] = parse(v);
-        return rules;
-      }
+function substLine(text) {
+	var text2 = text.replace(/^\s*#(\S+)(.*)$/, substCall);
+	return (text !== text2) ? text2 : substEval(text);
+}
 
-      container[emile] = function(el, style, opts, after) {
-        el = typeof el == 'string' ? document.getElementById(el) : el;
-        opts = opts || {};
-        var target = normalize(style),
-          comp = el.currentStyle ? el.currentStyle : getComputedStyle(el, null),
-          prop, current = {},
-          start = +new Date,
-          dur = opts.duration || 200,
-          finish = start + dur,
-          interval,
-          easing = opts.easing || function(pos) {
-            return (-Math.cos(pos * Math.PI) / 2) + 0.5;
-          };
-        for (prop in target) current[prop] = parse(comp[prop]);
-        interval = setInterval(function() {
-          var time = +new Date,
-            pos = time > finish ? 1 : (time - start) / dur;
-          for (prop in target)
-            el.style[prop] = target[prop].f(current[prop].v, target[prop].v, easing(pos)) + target[prop].u;
-          if (time > finish) {
-            clearInterval(interval);
-            opts.after && opts.after();
-            after && setTimeout(after, 1);
-          }
-        }, 10);
-      }
-    })('emile', this);
+function substEval(text) {
+	try {
+		var subst = function (_, code) { return eval(code); };
+		return text.replace(/{{(.*?)}}/g, subst);
+	} catch (e) {
+		console.error("Error in expression: " + text);
+		console.error(e);
+		return "";
+	}
+}
 
-    var Mold = {};
+function substCall(line, name, args) {
+	if (name in commands) {
+		try {
+			return commands[name](args);
+		} catch (e) {
+			console.error("Error in command: " + line);
+			console.error(e);
+			return "";
+		}
+	} else {
+		return line;
+	}
+}
 
-    // Evaluate something in a relatively clean environment, to prevent
-    // name clashing.
-    Mold.cleanEval = function(__string) {
-      return window.eval(__string);
-    };
+var _test;
 
-    (function() {
-      function splitTemplate(template) {
-        var parts = [];
+commands.test = function (code) { _test = eval(code); return ""; };
+commands.iftrue = function (code) { return _test ? substEval(code) : ""; };
+commands.iffalse = function (code) { return _test ? "" : substEval(code); };
 
-        function addString(string) {
-          if (string.length)
-            parts.push(string);
-        }
+commands["do"] = function (code) { eval(code); return ""; };
+commands["include"] = function (code) {	return include(eval(code)); };
 
-        while (true) {
-          var open = template.search(/[\[<]\?/);
-          if (open == -1) {
-            addString(template);
-            break;
-          } else {
-            addString(template.slice(0, open));
-            var close = template.indexOf("?" + (template.charAt(open) == "<" ? ">" : "]"), open + 2);
-            if (close == -1) throw new Error("'<?' without matching '?>' in template.");
-            var content = template.slice(open + 2, close),
-              match = content.match(/^([\w\.]+)(?:\s+((?:\r|\n|.)+))?$/);
-            if (!match) throw new Error("Template command ('" + content + "') does not follow 'command [arguments]' format.");
-            parts.push({
-              command: match[1],
-              args: match[2]
-            });
-            template = template.slice(close + 2);
-          }
-        }
+function include(id) {
+	var target = document.getElementById(id);
+	if (target !== null) {
+		return fetchFragment(target).outerHTML;
+	} else {
+		console.warn("Bad include: " + id);
+		return "";
+	}
+}
 
-        return parts;
-      }
+commands.literal = function (code) { return (code); };
 
-      var snippets, snippet;
-      Mold.addSnippet = function addSnippet(f) {
-        if (snippets) {
-          snippets.push(f);
-          return snippets.length - 1;
-        }
-      };
+// Utility functions for use by authors in their scripts.
 
-      var labels;
-      Mold.setLabel = function setLabel(name) {
-        return function(node) {
-          if (!labels) labels = {};
+function inline(id) {
+	var target = document.getElementById(id);
+	if (target !== null) {
+		return fetchFragment(target).innerHTML;
+	} else {
+		console.warn("Bad inline: " + id);
+		return "";
+	}
+}
 
-          if (forDepth > 0) {
-            var array = labels[name] || (labels[name] = []);
-            if (array.push) array.push(node);
-          } else {
-            labels[name] = node;
-          }
-        };
-      };
-
-      Mold.forDepth = 0;
-      var casting = false;
-
-      var HTMLspecial = {
-        "<": "&lt;",
-        "&": "&amp;",
-        "\"": "&quot;"
-      };
-      Mold.escapeHTML = function escapeHTML(text) {
-        return String(text).replace(/[<&\"]/g, function(ch) {
-          return HTMLspecial[ch];
-        });
-      };
-      var JSspecial = {
-        "\"": "\\\"",
-        "\\": "\\\\",
-        "\f": "\\f",
-        "\b": "\\b",
-        "\n": "\\n",
-        "\t": "\\t",
-        "\r": "\\r",
-        "\v": "\\v"
-      };
-
-      function escapeString(text) {
-        return String(text).replace(/[\"\\\f\b\n\t\r\v]/g, function(ch) {
-          return JSspecial[ch];
-        });
-      }
-
-      Mold.attachEvent = null;
-      Mold._attachEvent = function(node, eventName, func) {
-        var wrapped = function(event) {
-          func(event || window.event, node);
-        };
-        if (eventName == "enter") {
-          var origFunc = func;
-          func = function(event, node) {
-            if ((event.charCode || event.keyCode) == 13) origFunc(event, node);
-          };
-          eventName = "keydown";
-        }
-
-        if (Mold.attachEvent)
-          Mold.attachEvent(node, eventName, wrapped);
-        else if (node.addEventListener)
-          node.addEventListener(eventName, wrapped, false);
-        else
-          node.attachEvent("on" + eventName, wrapped);
-      };
-
-      Mold.forEach = function forEach(array, f) {
-        for (var i = 0; i < array.length; i++)
-          f(array[i], i);
-      };
-      var hop = Object.prototype.hasOwnProperty;
-      Mold.forEachIn = function forEachIn(obj, f) {
-        var i = 0;
-        for (var n in obj) {
-          if (hop.call(obj, n))
-            f(n, obj[n], i++);
-        }
-      };
-
-      var custom = {};
-      Mold.define = function(name, func) {
-        custom[name] = func;
-      };
-      Mold.dispatchCustom = function(name, arg, output) {
-        if (!custom.hasOwnProperty(name))
-          throw new Error("Unrecognised template command: '" + name + "'.");
-        output.push(custom[name](arg, output));
-      };
-
-      Mold.bake = function bake(template) {
-        var parts = splitTemplate(template);
-        var func = ["[function templateFunction($arg, __output){\nvar __out = __output || [];\n"];
-        var stack = [],
-          match;
-
-        while (parts.length) {
-          var cur = parts.shift();
-          if (typeof cur == "string") {
-            func.push("__out.push(\"" + escapeString(cur) + "\");\n");
-            continue;
-          }
-          switch (cur.command) {
-
-            case "text":
-            case "t":
-              func.push("__out.push(Mold.escapeHTML(" + cur.args + "));\n");
-              break;
-            case "html":
-            case "h":
-              func.push("__out.push(" + cur.args + ");\n");
-              break;
-            case "do":
-            case "d":
-              func.push(cur.args + "\n");
-              break;
-
-            case "if":
-              stack.push("if");
-              func.push("if (" + cur.args + ") {\n");
-              break;
-            case "elif":
-              if (stack[stack.length - 1] != "if") throw new Error("'elif' without matching 'if' in template.");
-              func.push("} else if (" + cur.args + ") {\n");
-              break;
-            case "else":
-              if (stack[stack.length - 1] != "if") throw new Error("'else' without matching 'if' in template.");
-              func.push("} else {\n");
-              break;
-            case "if.":
-              if (stack.pop() != "if") throw new Error("'if.' without matching 'if' in template.");
-              func.push("}\n");
-              break;
-
-            case "for":
-              stack.push("for");
-              if (match = cur.args.match(/^([\w\$_]+)(?:,\s*([\w\$_]+))?\s+in\s+((?:\r|\n|.)+)$/))
-                func.push("Mold.forDepth++;\nMold.forEachIn(" + match[3] + ", function(" + match[1] + ", " +
-                  (match[2] || "$dummy") + ", $i) {\n");
-              else if (match = cur.args.match(/^([\w\$_]+)\s+((?:\r|\n|.)+)$/))
-                func.push("Mold.forDepth++;\nMold.forEach(" + match[2] + ", function(" + match[1] + ", $i) {\n");
-              else
-                throw new Error("Malformed arguments to 'for' form in template -- expected variable name followed by expression.");
-              break;
-            case "for.":
-              if (stack.pop() != "for") throw new Error("'for.' without matching 'for' in template.");
-              func.push("});\nMold.forDepth--;\n");
-              break;
-
-            case "event":
-              if (match = cur.args.match(/^(\w+)\s+((?:\r|\n|.)+)$/))
-                func.push("__out.push(\"<var class=\\\"__mold \" + Mold.addSnippet(function(__node){Mold._attachEvent(__node, \"" +
-                  match[1] + "\", function($event, $node) {\n" + match[2] + "\n});}) + \"\\\"></var>\");\n");
-              else
-                throw new Error("Malformed arguments to 'event' form in template -- expected event name followed by handler body.");
-              break;
-            case "run":
-            case "r":
-              func.push("__out.push(\"<var class=\\\"__mold \" + Mold.addSnippet(function($node){" + cur.args + "}) + \"\\\"></var>\");\n");
-              break;
-            case "label":
-            case "l":
-              func.push("__out.push(\"<var class=\\\"__mold \" + Mold.addSnippet(Mold.setLabel(\"" + escapeString(cur.args) +
-                "\")) + \"\\\"></var>\");\n");
-              break;
-            case "call":
-              var f = cur.args,
-                arr = f.indexOf("->"),
-                arg = "null";
-              if (arr != -1) {
-                arg = f.slice(arr + 2);
-                f = f.slice(0, arr);
-              }
-              func.push(f + "(" + arg + ", __out);");
-              break;
-
-            default:
-              func.push("Mold.dispatchCustom(\"" + escapeString(cur.command) + "\", " + (/^\s*$/.test(cur.args) ? "null" : cur.args) + ", __out);\n");
-          }
-        }
-        if (stack.length) throw new Error("Unclosed blocks in template (" + stack.join() + ").");
-
-        func.push("return __output ? \"\" : __out.join(\"\");\n}]");
-        // The brackets are there to work around some weird IE6 behaviour.
-        return Mold.cleanEval(func.join(""))[0];
-      };
-
-      Mold.cast = function cast(target, mold, arg) {
-        if (casting) throw new Error("Mold.cast must not be called recursively.");
-
-        snippets = [], snippet = 0, labels = null, forDepth = 0, casting = true;
-        try {
-          target.innerHTML = mold(arg);
-          var varTags = target.getElementsByTagName("VAR"),
-            array = [];
-          // Copy tags into array -- FF modifies the varTags collection when you delete nodes in it.
-          for (var i = 0; i < varTags.length; i++)
-            array.push(varTags[i]);
-          for (var i = 0; i < array.length; i++) {
-            var varTag = array[i],
-              match = varTag.className.match(/^__mold (\d+)$/);
-            if (match) {
-              var prev = varTag.previousSibling;
-              while (prev && prev.nodeType == 3) prev = prev.previousSibling;
-              snippets[match[1]](prev || varTag.parentNode);
-              varTag.parentNode.removeChild(varTag);
-            }
-          }
-
-          var result = labels;
-        } finally {
-          labels = snippets = null;
-          casting = false;
-        }
-        return result;
-      };
-
-      Mold.castAppend = function castAppend(target, mold, arg) {
-        var temp = target.ownerDocument.createElement("DIV");
-        var result = Mold.cast(temp, mold, arg);
-        while (temp.firstChild)
-          target.appendChild(temp.firstChild);
-        return result;
-      };
-    })();
-
-    // Based on the tutorial at
-    // http://www.itnewb.com/v/Creating-the-Smooth-Scroll-Effect-with-JavaScript
-
-    function currentYPosition() {
-      // Firefox, Chrome, Opera, Safari
-      if (window.pageYOffset) return window.pageYOffset;
-      // Internet Explorer 6 - standards mode
-      if (document.documentElement && document.documentElement.scrollTop)
-        return document.documentElement.scrollTop;
-      // Internet Explorer 6, 7 and 8
-      if (document.body.scrollTop) return document.body.scrollTop;
-      return 0;
-    }
-
-    function elementYPosition(elt) {
-      var y = elt.offsetTop;
-      while (elt.offsetParent && elt.offsetParent != document.body) {
-        elt = elt.offsetParent;
-        y += node.offsetTop;
-      }
-      return y;
-    }
-
-    function smoothScrollTo(element) {
-      var startY = currentYPosition();
-      var stopY = elementYPosition(element);
-      var distance = Math.abs(startY - stopY);
-      if (distance < 100) {
-        scrollTo(0, stopY);
-        return;
-      }
-      var speed = Math.round(distance / 100);
-      if (speed > 20) speed = 20;
-      var step = Math.round(distance / 25);
-      var leapY = stopY > startY ? startY + step : startY - step;
-      var timer = 0;
-      if (stopY > startY) {
-        for (var i = startY; i < stopY; i += step) {
-          setTimeout(
-            "window.scrollTo(0, " + leapY + ")",
-            timer * speed);
-          leapY += step;
-          if (leapY > stopY) leapY = stopY;
-          timer++;
-        }
-      } else {
-        for (var i = startY; i > stopY; i -= step) {
-          setTimeout(
-            "window.scrollTo(0, " + leapY + ")",
-            timer * speed);
-          leapY -= step;
-          if (leapY < stopY) leapY = stopY;
-          timer++;
-        }
-      }
-    }
+function and(a, b) { return a && b; };
+function lt(a, b) { return a < b; };
+function lte(a, b) { return a <= b; };
+function gt(a, b) { return a > b; };
+function gte(a, b) { return a >= b; };
