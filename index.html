@@ -66,67 +66,69 @@
 
 <div style="Display: none;">
 
-<div id="start" title="Introduction">
- <p>de ce ma aflu aici?</p>
- 
+<div id="start" title="DE CE">
+ <p><a href="#pas1">de ce ma aflu aici?</a></p>
+</div>
+
+<div id="pas1"
  <p><a href="#pas2">de ce nu plec?</a></p>
- <p><a href="#pas3">ce nu-mi gasesc locul?</a></p>
+ <p><a href="#pas3">de ce nu-mi gasesc locul?</a></p>
 </div>
 
 <div id="pas2">
- <p>Ramus documents are made of many little fragments, usually simple <code>div</code> elements. All they need to have is an ID, so you can point links at them. In Ramus 2.1, <a rel="continue" href="#links">links had all the power</a>.
- 
- <p>That changed in version 2.2 with the addition of a little <a href="#scripting">scripting language</a>. In turn, it was upgraded in version 2.4 to a proper template system.
+ <p><a href="#pas4">de ce acasa nu ma simt acasa?</a></p>
 </div>
 
-<div id="pas3" title="HTML elements">
- <p>The only mandatody elements in a Ramus document are some sort of container with "transcript" as ID (you can change that, see below) and the script at the end. You'll also want a hidden section to keep the story fragments until they're needed. There should be at least one such fragment with "start" as ID (you can change that also, at the top of the script).
- 
- <p>As of version 2.1, there's also an optional <a href="#status-line">status line</a> that can be used to keep track of progress if at all desirable. Last but not least, Ramus now keeps track of <a href="#visited">visited fragments</a>.
- 
- <p>The script is kept relatively short on purpose, and should be the last thing in the file, so you can copy it elsewhere easily. Feel free to customize it as needed.
+<div id="pas3">
+<p><a href="#pas5">de ce nu renunt?</a></p>
 </div>
 
-<div id="links" title="Links">
- <p>To provide interactivity, Ramus hijacks most links for its own use. To link between fragments, simply use a hash sign and its ID. 
- 
- <p>There are several kinds of links, set apart by custom values of the <code>rel</code> attribute: "append" (the default), "continue", "clear", "replace", "reset", and "external". For defails, see the link type reference included separately.
- 
- <p>Note: reset links <em>can't</em> clear variables set by the <a href="#scripting">scripting language</a>; also, unlike the others, external links are actually part of the standard HTML <a rel="external" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types" target="_blank">link types</a>.
+<div id="pas4">
+<p><a href="#pas6">de ce ma simt in plus?</a></p>
+<p><a href="#pas7">de ce nu sunt apropiat de familia mea?></a></p>
 </div>
 
-<div id="status-line" title="The status line">
- <p>The status line is in fact comprised of three separate elements, whose IDs are "status", "moves" and "score", respectively. They can be placed anywhere in the document, or even removed entirely. Here's how they work:
- 
- <p>The <b>status</b> text is taken from the <var>title</var> element of each story fragment as it's visited, if one is present at all; otherwise it's not changed.
- 
- <p>The <b>move counter</b> is incremented every time the player follows a link.
- 
- <p>The <b>score</b> is incremented whenever the player visits a passage with the <var>data-score</var> attribute.
- 
- <p>Scoring requires a relatively modern browser to work.
+<div id="pas5">
+<p><a href="#pas8">de ce ma straduiesc atat?</a></p>
+<p><a href="#pas9">de ce caut un raspuns?</a></p>
 </div>
 
-<div id="visited" title="Visited fragments">
- <p>Ramus keeps track of which story fragments were already visited, and adds the "visited" or "unvisited" class to their containers as they are displayed. You can use styling to show or hide parts of them accordingly.
- 
- <p>This feature requires a relatively modern browser to work; otherwise visits will still be noted, but without any visual changes.
+<div id="pas6">
+<p><a href="#pas10">de ce sunt singur?</a></p>
 </div>
 
-<div id="scripting" title="Scripting language">
- <p>Since version 2.4, Ramus includes a proper template system. It's based on Javascript expressions, to stay as simple as it gets. Here's a sample:
-
-<pre><code>	#do a = 1
-#literal	&lt;p&gt;a was set to {{a}}.
-#literal	#test a === 1
-#literal	#iftrue &lt;p&gt;Is too!
-#literal	#iffalse &lt;p&gt;Is not!
-</code></pre>
-
- <p>For more details, see the scripting reference included separately. <!--Scripts should work in any browser released from 2011 onward.-->
+<div id="pas7">
+	<p><a href="#pas10">de ce sunt singur?</a></p>
 </div>
 
+<div id="pas8">
+<p><a href="#pas11">de ce nu sunt productiv?</a></p>
+<p><a href="#pas12">de ce muncesc zi de zi?</a></p>
 </div>
+
+
+<div id="pas9">
+<p><a href="#pas13">de ce vreau sa continui?</a></p>
+</div>
+
+<div id="pas10">
+<p><a href="#pas15">de ce nu am grija de mine?</a></p>
+<p><a href="#pas16">de ce ma iubesc?</a></p>
+<p><a href="#pas17">de ce nu imi sun parintii?</a></p>
+</div>
+
+<div id="pas11">
+<p><a href="#pas14">de ce toata lumea are asteptari?</a></p>
+</div>
+
+
+
+
+
+
+
+
+
 
 <!-- You shouldn't need to edit below this line. -->
 <script>
