@@ -22,7 +22,7 @@
 		Padding: 3ex;
 		Margin: 1ex auto;
 		Line-height: 1.5em;
-		Text-align: justify;
+		Text-align: left;
 		Background-color: white;
 		Box-shadow: 0.5ex 0.5ex 0.5ex rgb(255, 255, 255);
 	}
@@ -50,14 +50,19 @@
 		0% { opacity: 0; }
 		100% { opacity: 1; }
 	}
+
+	div {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    
+}
 </style>
 <meta name="viewport" content="width=device-width">
 <meta name="creator" content="No Time To Play">
 
 
-
-
-<div role="log" id="transcript">Please enable Javascript to play.</div>
+<main role="log" id="transcript">Please enable Javascript to play.</main>
 
 
 <div style="Display:none;">
@@ -523,4 +528,54 @@ function lt(a, b) { return a < b; };
 function lte(a, b) { return a <= b; };
 function gt(a, b) { return a > b; };
 function gte(a, b) { return a >= b; };
+</script>
+
+<script>
+	// collect all the divs
+var divs = document.getElementsByTagName('div');
+// get window width and height
+var winWidth = window.innerWidth;
+var winHeight = window.innerHeight;
+
+// i stands for "index". you could also call this banana or haircut. it's a variable
+for ( var i=0; i < divs.length; i++ ) {
+ 	
+    // shortcut! the current div in the list
+    var thisDiv = divs[i];
+    
+    // get random numbers for each element
+    randomTop = getRandomNumber(0, winHeight);
+    randomLeft = getRandomNumber(0, winWidth);
+    
+    // update top and left position
+    thisDiv.style.top = randomTop +"px";
+    thisDiv.style.left = randomLeft +"px";
+    
+}
+
+// function that returns a random number between a min and max
+function getRandomNumber(min, max) {
+    
+  return Math.random() * (max - min + 1) + min;
+    
+}
+</script>
+
+<script>
+	let time = new Date().getTime();
+const setActivityTime = (e) => {
+  time = new Date().getTime();
+}
+document.body.addEventListener("mousemove", setActivityTime);
+document.body.addEventListener("keypress", setActivityTime);
+
+const refresh = () => {
+  if (new Date().getTime() - time >= 30000) {
+    window.location.reload(true);
+  } else {
+    setTimeout(refresh, 10000);
+  }
+}
+
+setTimeout(refresh, 10000);
 </script>
